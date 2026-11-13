@@ -3,7 +3,18 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
+
+// Sürüm kodu her CI derlemesinde artar (VERSION_CODE ortam değişkeni). Android, aynı imzalı ve
+// sürüm kodu daha yüksek bir APK'yı eski sürümün üzerine kurar; veriler korunur.
+val ciVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull()
+val appVersionCode = ciVersionCode ?: 1
+val appVersionName = "0.1.$appVersionCode"
+
+// Release imzası: anahtar yalnızca ortam değişkenlerinden gelir, repoda durmaz.
+// CI bunları GitHub secret'larından doldurur (README > Release ve imza).
+val releaseKeystore = System.getenv("KINDAR_KEYSTORE_FILE")?.let { file(it) }?.takeIf { it.exists() }
 
 android {
     namespace = "com.tufanozdemir.kindar"
@@ -13,12 +24,29 @@ android {
         applicationId = "com.tufanozdemir.kindar"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
+    }
+
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = System.getenv("KINDAR_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KINDAR_KEY_ALIAS")
+                keyPassword = System.getenv("KINDAR_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            // Debug sürümü ayrı bir uygulama olarak kurulur; release sürümüne ve verisine dokunmaz.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -37,6 +65,12 @@ android {
 
 ksp {
     arg("room.generateKotlin", "true")
+}
+
+// Her veritabanı sürümünün şeması repoda saklanır; şema değişikliği CI'da yakalanır ve
+// bir Migration yazılmadan yayınlanamaz (bkz. KindarDatabase).
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
