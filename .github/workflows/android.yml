@@ -39,12 +39,23 @@ jobs:
         # Room her derlemede şemayı app/schemas altına yazar. Dosya repodakinden farklıysa şema
         # değişmiştir: sürüm arttırılmalı, göç yazılmalı ve yeni şema dosyası commit edilmelidir.
         run: |
-          if [ -n "$(git status --porcelain app/schemas)" ]; then
-            echo "::error::Room şeması değişti ya da repoda yok. Aşağıdaki dosyaları commit edin ve gerekiyorsa Migration ekleyin."
-            git status --porcelain app/schemas
-            for f in $(git ls-files --others --modified app/schemas); do echo "----- $f"; cat "$f"; done
-            exit 1
-          fi
+          python3 - <<'PY'
+          import json, subprocess, sys
+          changed = subprocess.run(["git", "ls-files", "--others", "--modified", "app/schemas"],
+                                   capture_output=True, text=True, check=True).stdout.split()
+          bad = []
+          for f in changed:
+              old = subprocess.run(["git", "show", f"HEAD:{f}"], capture_output=True, text=True)
+              if old.returncode != 0 or json.loads(old.stdout) != json.load(open(f)):
+                  bad.append(f)
+          if bad:
+              print("::error::Room şeması değişti ya da repoda yok. Bu dosyaları commit edin ve gerekiyorsa Migration ekleyin.")
+              for f in bad:
+                  print("-----", f)
+                  print(open(f).read())
+              sys.exit(1)
+          print("Şemalar repodakiyle aynı.")
+          PY
 
       - name: İmza anahtarını hazırla
         id: signing

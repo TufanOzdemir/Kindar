@@ -38,4 +38,31 @@ app/src/main/java/com/tufanozdemir/kindar/
 ./gradlew assembleDebug       # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Her pull request'te GitHub Actions testleri çalıştırır ve debug APK'yı "kindar-debug-apk" adıyla iş akışının çıktılarına ekler.
+Her pull request'te GitHub Actions testleri çalıştırır, veritabanı şemasını denetler ve release APK'yı derler.
+
+## Release ve güncellemeler
+
+`main` dalına giren her değişiklikte iş akışı imzalı bir release APK derler ve onu **GitHub Releases** sayfasına `kindar-0.1.<N>.apk` olarak ekler. Telefonda en yeni APK'yı açıp kurmak yeterli: aynı anahtarla imzalandığı ve sürüm kodu her derlemede arttığı için önceki sürümün üzerine kurulur, veriler korunur. Uygulamayı silmeye gerek yoktur.
+
+Verinin güncellemelerde korunması için:
+
+- **Sabit imza:** Her release aynı anahtarla imzalanır. Anahtar repoda durmaz, GitHub secret'larından gelir.
+- **Artan sürüm kodu:** `versionCode` = iş akışının çalışma numarası.
+- **Veritabanı göçleri:** Şema `app/schemas/` altında saklanır. Şema değişip de dosya güncellenmezse CI durur. Şema değişikliğinde `KindarDatabase.version` arttırılır ve bir göç eklenir. Veriyi silen `fallbackToDestructiveMigration` kullanılmaz.
+- **Debug ayrı uygulamadır:** Debug derlemeleri `com.tufanozdemir.kindar.debug` kimliğiyle "Kindar Debug" adında kurulur, gerçek veriye dokunmaz.
+
+### İmza anahtarını kurmak (bir kez)
+
+1. Anahtar oluştur (Android Studio'nun içindeki `jbr/bin/keytool` da olur):
+   ```bash
+   keytool -genkeypair -keystore kindar-release.jks -storetype PKCS12 -alias kindar \
+     -keyalg RSA -keysize 4096 -validity 36500 -dname "CN=Kindar"
+   ```
+2. Dosyayı base64'e çevir:
+   - macOS: `base64 -i kindar-release.jks | pbcopy`
+   - Linux: `base64 -w0 kindar-release.jks`
+   - Windows PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("kindar-release.jks")) | Set-Clipboard`
+3. GitHub'da Settings > Secrets and variables > Actions altında dört secret ekle: `KINDAR_KEYSTORE_BASE64` (2. adımın çıktısı), `KINDAR_KEYSTORE_PASSWORD`, `KINDAR_KEY_ALIAS` (`kindar`), `KINDAR_KEY_PASSWORD` (PKCS12'de şifre ile aynı).
+4. `kindar-release.jks` dosyasını ve şifreyi güvenli bir yerde yedekle. Anahtar kaybolursa yeni sürümler eskisinin üzerine kurulamaz.
+
+Secret'lar yoksa iş akışı APK'yı imzasız derler ve yayınlamaz.
