@@ -79,8 +79,8 @@ jobs:
         run: ./gradlew --no-daemon assembleRelease
 
       - name: GitHub Release olarak yayınla
-        # Yalnızca main'e giren değişikliklerde (ya da elle tetiklendiğinde) ve imza varken.
-        if: steps.signing.outputs.available == 'true' && github.event_name != 'pull_request'
+        # Yalnızca main dalında ve imza varken. Diğer dallarda elle tetiklenen derlemeler yayınlanmaz.
+        if: steps.signing.outputs.available == 'true' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
