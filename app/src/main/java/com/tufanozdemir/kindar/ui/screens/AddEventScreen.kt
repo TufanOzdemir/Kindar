@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -40,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tufanozdemir.kindar.ui.components.bringIntoViewOnFocus
 import com.tufanozdemir.kindar.domain.EventKind
 import com.tufanozdemir.kindar.ui.components.formatDate
 import com.tufanozdemir.kindar.ui.theme.LedgerColors
@@ -85,6 +88,9 @@ fun AddEventScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // Klavye açıldığında içerik onun üstünde kalsın ve kaydırılabilsin.
+                .consumeWindowInsets(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -126,14 +132,14 @@ fun AddEventScreen(
                 label = { Text("Başlık") },
                 placeholder = { Text("Örn. Taşınmada yardım etti") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
             )
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
                 label = { Text("Ayrıntılar") },
                 minLines = 3,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
             )
             OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.DateRange, contentDescription = null)

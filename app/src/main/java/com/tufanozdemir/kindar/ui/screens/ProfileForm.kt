@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -37,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.tufanozdemir.kindar.data.ProfileEntity
+import com.tufanozdemir.kindar.ui.components.bringIntoViewOnFocus
 import com.tufanozdemir.kindar.domain.RelationType
 
 private val importanceHints = mapOf(
@@ -130,7 +133,7 @@ fun ProfileEditDialog(
                     onValueChange = { notes = it },
                     label = { Text("Notlar") },
                     minLines = 2,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
                 )
             }
         },
@@ -179,6 +182,9 @@ fun NewProfileScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // Klavye açıldığında içerik onun üstünde kalsın ve kaydırılabilsin.
+                .consumeWindowInsets(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -210,7 +216,7 @@ fun NewProfileScreen(
                 onValueChange = { notes = it },
                 label = { Text("Notlar") },
                 minLines = 3,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
             )
             Button(
                 enabled = name.isNotBlank(),
